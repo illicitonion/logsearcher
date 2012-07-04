@@ -4,22 +4,22 @@ import (
   "testing"
 )
 
-func assertSlicesEqual(t *testing.T, expected_slice, actual_slice []string) {
-  expected_len := len(expected_slice)
-  actual_len := len(actual_slice)
-  if expected_len != actual_len {
-    t.Fatalf("Expected %v files %v but got: %v %v", expected_len, expected_slice, actual_len, actual_slice)
-  }
-  
-  for i := range expected_slice {
-    expected := expected_slice[i]
-    actual := actual_slice[i]
-    if expected != actual {
-      t.Errorf("Mismatch at index %v: Expected %v but got: %v", i, expected, actual)
+func assertChanReturns(t *testing.T, expected []string, ch chan string) {
+  for i := range expected {
+    actual, open := <- ch
+    if actual != expected[i] {
+      t.Errorf("Mismatch at index %v: Expected %v but got: %v (already matched: %v)", i, expected[i], actual, expected[:i])
+    }
+    if !open && i < len(expected) {
+      t.Fatalf("Expected %v values %v but only got %v %v", len(expected), expected, i, expected[:i])
     }
   }
+  _,open := <- ch
+  if open {
+    t.Errorf("Channel still open after all matches")
+  }
 }
-
+      
 func checkNoError(t *testing.T, err error) {
   if err != nil {
     t.Fatalf("Expected error to be nil but was %v", err)
@@ -29,25 +29,28 @@ func checkNoError(t *testing.T, err error) {
 func TestListFiles(t *testing.T) {
   expected_files := []string{"1.txt", "2.txt"}
 
-  found_files, err := ListFiles("../../testdata/files")
+  ch := make(chan string)
+  go assertChanReturns(t, expected_files, ch)
+  err := ListFiles("../../testdata/files", ch)
   checkNoError(t, err)
-  assertSlicesEqual(t, expected_files, found_files)
 }
 
 func TestListFilesIfDirHadTrailingSlash(t *testing.T) {
   expected_files := []string{"1.txt", "2.txt"}
 
-  found_files, err := ListFiles("../../testdata/files/")
+  ch := make(chan string)
+  go assertChanReturns(t, expected_files, ch)
+  err := ListFiles("../../testdata/files/", ch)
   checkNoError(t, err)
-  assertSlicesEqual(t, expected_files, found_files)
 }
 
 func TestIncludesSubdirs(t *testing.T) {
   expected_files := []string{"1.txt", "child/2.txt", "child/grandchild/3.txt"}
 
-  found_files, err := ListFiles("../../testdata/withchildren")
+  ch := make(chan string)
+  go assertChanReturns(t, expected_files, ch)
+  err := ListFiles("../../testdata/withchildren", ch)
   checkNoError(t, err)
-  assertSlicesEqual(t, expected_files, found_files)
 }
 
 func TestInvalidDirs(t *testing.T) {
@@ -55,10 +58,12 @@ func TestInvalidDirs(t *testing.T) {
 
   invalid_dirs := []string{"!", "doesnotexist"}
   for i := range invalid_dirs {
-    found_files, err := ListFiles(invalid_dirs[i])
+    ch := make(chan string)
+    go assertChanReturns(t, expected_files, ch)
+    err := ListFiles(invalid_dirs[i], ch)
+
     if err == nil {
       t.Fatalf("Expected error but was nil")
     }
-    assertSlicesEqual(t, expected_files, found_files)
   }
 }

@@ -1,7 +1,6 @@
 package logsearcher
 
 import (
-  "container/list"
   "fmt"
   "os"
   "path/filepath"
@@ -14,33 +13,34 @@ func (e invalidFilenameFormatErr) Error() string {
   return string(e)
 }
 
-func ListFiles(dir string) (filenames []string, err error) {
-  filenamesList := new(list.List)
-  dirLength := len(dir)
+func ListFiles(dir string, ch chan string) error {
   if !strings.HasSuffix(dir, "/") {
-    dirLength++
+    dir = dir + "/"
   }
-  err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+  dirLength := len(dir)
+
+  var previousErr error
+
+  filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+    if previousErr != nil {
+      return err
+    }
     if err != nil {
+      previousErr = err
+      close(ch)
       return err
     }
     if !info.IsDir() {
       if !strings.HasPrefix(path, dir) {
+        close(ch)
         return invalidFilenameFormatErr(fmt.Sprintf("Expected file %v to start with %v", path, dir))
       }
-      filenamesList.PushBack(path[dirLength:])
+      ch <- path[dirLength:]
     }
     return nil
   })
-  if err != nil {
-    return []string{}, err
+  if previousErr == nil {
+    close(ch)
   }
-  filenames = make([]string, filenamesList.Len())
-  i := 0
-  for e := filenamesList.Front() ; e != nil ; e = e.Next() {
-    val := e
-    filenames[i] = val.Value.(string)
-    i++
-  }
-  return
+  return previousErr
 }
