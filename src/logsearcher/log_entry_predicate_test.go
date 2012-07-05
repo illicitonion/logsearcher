@@ -11,7 +11,7 @@ func assertMatches(t *testing.T, predicate Predicate, s string, expected bool) {
 }
 
 func TestNameAndMessage(t *testing.T) {
-  predicate := logEntryPredicate("dawagner", "message")
+  predicate := LogEntryPredicate("dawagner", "message")
   truths := []string{
     "[23:15:33] dawagner: some message",
     "[00:00:00] dawagner: Some other some message",
@@ -29,7 +29,7 @@ func TestNameAndMessage(t *testing.T) {
 }
 
 func TestJustName(t *testing.T) {
-  predicate := logEntryPredicate("dawagner", "")
+  predicate := LogEntryPredicate("dawagner", "")
   truths := []string{
     "[23:15:33] dawagner: something",
     "[00:00:00] dawagner:",
@@ -47,7 +47,7 @@ func TestJustName(t *testing.T) {
 }
 
 func TestJustMessage(t *testing.T) {
-  predicate := logEntryPredicate("", "some message")
+  predicate := LogEntryPredicate("", "some message")
   truths := []string{
     "[23:15:33] dawagner: some message with trailing",
     "[23:15:34] dawagner: some message",
@@ -66,5 +66,5 @@ func TestJustMessage(t *testing.T) {
 }
 
 func TestCaseInsensitivity(t *testing.T) {
-  assertMatches(t, logEntryPredicate("daWagner", "some Message"), "[23:15:33] Dawagner: Some message with trailing", true)
+  assertMatches(t, LogEntryPredicate("daWagner", "some Message"), "[23:15:33] Dawagner: Some message with trailing", true)
 }

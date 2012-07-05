@@ -4,7 +4,7 @@ import(
   "strings"
 )
 
-func logEntryPredicate(usernameMixedCase string, messageMixedCase string) Predicate {
+func LogEntryPredicate(usernameMixedCase string, messageMixedCase string) Predicate {
   username := strings.ToLower(usernameMixedCase)
   message := strings.ToLower(messageMixedCase)
 

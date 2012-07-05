@@ -10,8 +10,8 @@ import (
 type Predicate func(string) bool
 
 type FileEntry struct {
-  path string
-  snippets chan string
+  Path string
+  Snippets chan string
 }
 
 func GetFileSnippets(dir string, predicate Predicate, files chan FileEntry) {

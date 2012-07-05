@@ -34,15 +34,15 @@ func TestFiltersLines(t *testing.T) {
 }
 
 func assertFileEntryEquals(t *testing.T, expected FileEntry, actual FileEntry) {
-  defer consume(expected.snippets)
-  defer consume(actual.snippets)
+  defer consume(expected.Snippets)
+  defer consume(actual.Snippets)
 
-  if expected.path != actual.path {
-    t.Fatalf("Incorrect path: Expected %v but was %v", expected.path, actual.path)
+  if expected.Path != actual.Path {
+    t.Fatalf("Incorrect path: Expected %v but was %v", expected.Path, actual.Path)
   }
   for {
-    expectedLine,expectedOk := <- expected.snippets
-    actualLine,actualOk := <- actual.snippets
+    expectedLine,expectedOk := <- expected.Snippets
+    actualLine,actualOk := <- actual.Snippets
     if !expectedOk && !actualOk {
       break
     } else if expectedOk != actualOk {
@@ -100,6 +100,6 @@ func TestGetsFileSnippets(t *testing.T) {
 
   file,ok = <- files
   if ok {
-    t.Fatalf("Expected no more files but found %v", file.path)
+    t.Fatalf("Expected no more files but found %v", file.Path)
   }
 }
