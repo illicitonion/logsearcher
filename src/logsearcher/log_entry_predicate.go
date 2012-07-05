@@ -13,7 +13,7 @@ func LogEntryPredicate(usernameMixedCase string, messageMixedCase string) Predic
     fields := strings.Fields(str)
 
     return len(fields) > 1 &&
-      (len(username) == 0 || username + ":" == fields[1]) &&
+      (len(username) == 0 || username + ":" == fields[1] || "<" + username + ">" == fields[1]) &&
       strings.Contains(str, message)
   }
 }
