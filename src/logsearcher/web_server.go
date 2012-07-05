@@ -35,22 +35,35 @@ const formBody string = `<p>Both fields are optional, but it would be really nic
   </div>`
 
 func (server LogSearchServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  fmt.Fprint(w, header)
+  w.Header()["Connection"] = []string{"close"}
+  _,printerr := fmt.Fprint(w, header)
+  if printerr != nil {
+    return
+  }
 
   queryValues,_ := url.ParseQuery(r.URL.RawQuery)
   usernames,uok := queryValues["username"]
   messages,mok := queryValues["message"]
   if !uok || !mok {
-    fmt.Fprint(w, formBody)
+    _,printerr := fmt.Fprint(w, formBody)
+    if printerr != nil {
+      return
+    }
     folders := make(chan string)
     go func() {
       for {
         folder,ok := <- folders
         if !ok {
-          fmt.Fprint(w, footer)
+          _,printerr := fmt.Fprint(w, footer)
+          if printerr != nil {
+            return
+          }
           break
         }
-        fmt.Fprintf(w, "<p><a href='%v%v'>%v</a></p>", server.LogHttpRoot, folder, folder)
+        _,printerr := fmt.Fprintf(w, "<p><a href='%v%v'>%v</a></p>", server.LogHttpRoot, folder, folder)
+        if printerr != nil {
+          return
+        }
       }
     }()
     ListFolders(server.LogPath, folders)
@@ -71,14 +84,23 @@ func (server LogSearchServer) ServeHTTP(w http.ResponseWriter, r *http.Request) 
       for {
         snippet,err := <- file.Snippets
         if !err {
-          fmt.Fprint(w, "</ul>")
+          _,printerr := fmt.Fprint(w, "</ul>")
+          if printerr != nil {
+            return
+          }
           break
         }
         if !printed {
-          fmt.Fprintf(w, "<h3><a href='%v%v'>%v</a></h3><ul>", server.LogHttpRoot, file.Path, file.Path)
+          _,printerr := fmt.Fprintf(w, "<h3><a href='%v%v'>%v</a></h3><ul>", server.LogHttpRoot, file.Path, file.Path)
+          if printerr != nil {
+            return;
+          }
           printed = true
         }
-        fmt.Fprintf(w, "<li>%v</li>", server.Escape(snippet))
+        _,printerr := fmt.Fprintf(w, "<li>%v</li>", server.Escape(snippet))
+        if printerr != nil {
+          return
+        }
       }
     }
     fmt.Fprint(w, footer)
