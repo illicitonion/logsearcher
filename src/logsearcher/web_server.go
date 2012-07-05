@@ -24,8 +24,7 @@ const footer = `</form>
 </body>
 </html>`
 
-const form string = header +
-`<p>Both fields are optional, but it would be really nice if you supplied at least one (otherwise a 20MB+ page will be served).</p>
+const formBody string = `<p>Both fields are optional, but it would be really nice if you supplied at least one (otherwise a 20MB+ page will be served).</p>
 <p>Search is case-insensitive.</p>
 <p>Username is exact-equality check.  Message is contains check.</p>
 <form action="/" method="GET">
@@ -33,14 +32,28 @@ const form string = header +
     <label for="username">Username</label><input type="text" id="username" name="username" />
     <label for="message">Message</label><input type="text" id="message" name="message" size="50" />
     <input type="submit" value="Search" />
-  </div>` + footer
+  </div>`
 
 func (server LogSearchServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+  fmt.Fprint(w, header)
+
   queryValues,_ := url.ParseQuery(r.URL.RawQuery)
   usernames,uok := queryValues["username"]
   messages,mok := queryValues["message"]
   if !uok || !mok {
-    fmt.Fprint(w, form)
+    fmt.Fprint(w, formBody)
+    folders := make(chan string)
+    go func() {
+      for {
+        folder,ok := <- folders
+        if !ok {
+          fmt.Fprint(w, footer)
+          break
+        }
+        fmt.Fprintf(w, "<p><a href='%v%v'>%v</a></p>", server.LogHttpRoot, folder, folder)
+      }
+    }()
+    ListFolders(server.LogPath, folders)
     return
   }
 
@@ -49,7 +62,6 @@ func (server LogSearchServer) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
   files := make(chan FileEntry)
   go func() {
-    fmt.Fprint(w, header)
     for {
       file,ok := <- files
       if !ok {
