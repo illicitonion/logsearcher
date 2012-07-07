@@ -4,6 +4,7 @@ import (
   "fmt"
   "net/http"
   "net/url"
+  "runtime"
 )
 
 type Escaper func(string) string
@@ -74,6 +75,7 @@ func (server LogSearchServer) ServeHTTP(w http.ResponseWriter, r *http.Request) 
   message := messages[0]
 
   files := make(chan FileEntry)
+  closed := false
   go func() {
     for {
       file,ok := <- files
@@ -104,8 +106,12 @@ func (server LogSearchServer) ServeHTTP(w http.ResponseWriter, r *http.Request) 
       }
     }
     fmt.Fprint(w, footer)
+    closed = true
   }()
 
   GetFileSnippets(server.LogPath, LogEntryPredicate(username, message), files)
+  for !closed {
+    runtime.Gosched()
+  }
 }
 
