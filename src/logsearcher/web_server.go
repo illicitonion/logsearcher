@@ -42,6 +42,7 @@ func (server LogSearchServer) ServeHTTP(w http.ResponseWriter, r *http.Request) 
     return
   }
 
+  closed := false
   queryValues,_ := url.ParseQuery(r.URL.RawQuery)
   usernames,uok := queryValues["username"]
   messages,mok := queryValues["message"]
@@ -56,6 +57,7 @@ func (server LogSearchServer) ServeHTTP(w http.ResponseWriter, r *http.Request) 
         folder,ok := <- folders
         if !ok {
           _,printerr := fmt.Fprint(w, footer)
+          closed = true
           if printerr != nil {
             return
           }
@@ -68,6 +70,9 @@ func (server LogSearchServer) ServeHTTP(w http.ResponseWriter, r *http.Request) 
       }
     }()
     ListFolders(server.LogPath, folders)
+    for !closed {
+      runtime.Gosched()
+    }
     return
   }
 
@@ -75,7 +80,6 @@ func (server LogSearchServer) ServeHTTP(w http.ResponseWriter, r *http.Request) 
   message := messages[0]
 
   files := make(chan FileEntry)
-  closed := false
   go func() {
     for {
       file,ok := <- files
